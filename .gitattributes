@@ -1,1 +1,3 @@
 *.xcodeproj binary merge=union
+*.pbxproj binary merge=union
+
