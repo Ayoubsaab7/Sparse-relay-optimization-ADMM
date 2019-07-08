@@ -1,6 +1,8 @@
 # About this repository
 This repo contains files pertaining to my Master's thesis project, which was about a potential system model/scenario under the umbrella of a Cloud Radio Access Network (C-RAN). The aforementioned files
 include:
+
+
 0) The thesis
 1) The IEEE-VTC-2018 (Chicago) Conference Paper: https://ieeexplore.ieee.org/document/8690755
 2) MATLAB code
