@@ -25,6 +25,7 @@
 /* Begin PBXFileReference section */
 		21D0279422D3597100DA03DA /* Sparse-relay-optimization-ADMM */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "Sparse-relay-optimization-ADMM"; sourceTree = BUILT_PRODUCTS_DIR; };
 		21D0279722D3597100DA03DA /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
+		21D0279E22D359FF00DA03DA /* Eigen */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Eigen; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -57,6 +58,7 @@
 		21D0279622D3597100DA03DA /* Sparse-relay-optimization-ADMM */ = {
 			isa = PBXGroup;
 			children = (
+				21D0279E22D359FF00DA03DA /* Eigen */,
 				21D0279722D3597100DA03DA /* main.cpp */,
 			);
 			path = "Sparse-relay-optimization-ADMM";
