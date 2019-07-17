@@ -5,8 +5,8 @@ include:
 
 0) The thesis
 1) The IEEE-VTC-2018 (Chicago) Conference Paper: https://ieeexplore.ieee.org/document/8690755
-2) MATLAB code
-3) Equivalent C++ code
+2) C++ code
+3) MATLAB code
 
 # Note to the reader
 The conference paper's abstract can be difficult to grasp for people who don't know domain-specific terms, the domain in question being Communication Systems. In what follows, I will do my best to explain the purpose of the project in layman terms. Let's begin.
@@ -25,10 +25,9 @@ This question must be answered for each relay. Finally, the design of each matri
 In addition to the design of each matrix, we would like to save some energy in this network configuration by turning off some of the 'useless' relays.
 This process can be done using what is called regularization.
 
+# C++ simulation
 
 # MATLAB simulation
-
-# C++ simulation
 
 # Contact: suggestions, comments, questions are welcome.
 ayoub.saab@mail.mcgill.ca
