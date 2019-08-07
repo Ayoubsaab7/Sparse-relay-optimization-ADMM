@@ -9,7 +9,7 @@ include:
 3) MATLAB code
 
 # Note to the reader
-The conference paper's abstract can be difficult to grasp for people who don't know domain-specific terms, the domain in question being Communication Systems. In what follows, I will do my best to explain the purpose of the project in layman terms. Let's begin.
+The conference paper's abstract can be difficult to grasp for people who don't know domain-specific terms, the domain in question being Communication Systems. In what follows, I will do my best to explain the purpose of the project in layman terms.
 
 # Project Description
 We have a certain number (K) of mobile phones, every one of which paired with a single phone, with which it is trying to communicate. Unfortunately, the channel in between the K pairs is distorted. 
