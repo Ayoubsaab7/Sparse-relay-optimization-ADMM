@@ -50,8 +50,13 @@ int main()
     const int size = vectorSum(N,0,relays-1); //sum_{i=1}^L N_l
     const int size2 = vectorSum(Ns,0,relays-1); //sum_{i=1}^L N_l^2
     
+    
+    /* BEGIN MONTE CARLO SIMULATION */
+    
     for (int sim = 0 ; sim<monteCarlo ; sim++)
     {
+        /* GENERATE THE WIRELESS CHANNELS H (backward) and G (foreward) */
+        
         //generate channels
         MatrixXcd h(size,UEs);
         MatrixXcd g(size,UEs);
@@ -71,17 +76,17 @@ int main()
          
          */
         
-        //generate Psi: Matrix to express relay-power constraints
+        //1) generate Psi: Matrix to express relay-power constraints
         MatrixXcd Psi (size2,size2);
         Psi.setZero();
         generatePsi(Psi,h,sigmaRelay,N,Ns);
         
-        //generate small delta matrix: D
+        //2a) generate small delta matrix: D
         MatrixXcd D(size2,UEs*UEs);
         D.setZero();
         generateD(D,h,g,N,Ns);
 
-        //generate PHI MATRIX from D
+        //2b) generate PHI MATRIX from D
         MatrixXcd Phi (size2,UEs);
         for (int k =0 ; k<UEs ; k++)
         {
@@ -91,31 +96,30 @@ int main()
             }
         }
         
-        //generate DELTA MATRIX
+        //3) generate DELTA MATRIX
         MatrixXcd Delta (size2,size2);
         Delta.setZero();
         generateDelta(Delta,D,size2);
         
-        //generate the G Matrix
+        //4) generate the G Matrix
         MatrixXcd G(size2,size2);
         G.setZero();
         generateG(G, g, sigmaRelay, N, Ns, size2);
         
-        //generate the Theta Matrix: THETA = G + DELTA
+        //5) generate the Theta Matrix: THETA = G + DELTA
         MatrixXcd Theta(size2,size2);
         Theta = G + Delta;
         
-        Phi = Psi.pow(-0.5)*Phi;
-        //cout<<"New PHI = PSI^(-0.5)*PHI "<<endl;
-        //cout<<Phi<<endl;
         
         
         /* BEGIN THE OPTIMIZATION PROCESS THROUGH THE ALTERNATING DIRECTION
          
-         METHOD OF MULTIPLIERS (ADMM)
+         METHOD OF MULTIPLIERS (ADMM) ALGORITHM
         
          */
         
+        Phi = Psi.pow(-0.5)*Phi;
+
         //begin ADMM algorithm
         MatrixXcd Q(size2,size2);
         MatrixXcd Qinverse(size2,size2);
@@ -194,11 +198,12 @@ int main()
             rk = w-theta;                      //primal residual
             sk = (-rho/2.0)*theta - sum_sk;      //dual residual
             sum_sk = sum_sk + sk;              //sum of dual residuals
-            eps_pri = sqrt(size2)*eps_abs + eps_rel*max(w.norm(),theta.norm()) ; //primal tolerance threshold
-            eps_dual = sqrt(size2)*eps_abs + eps_rel*mu.norm();                 //dual torelance threshold
+            eps_pri = sqrt(size2)*eps_abs + eps_rel*max(w.norm(),theta.norm()); //primal tolerance threshold
+            eps_dual = sqrt(size2)*eps_abs + eps_rel*mu.norm();  //dual torelance threshold
             
             
             //compute the objective function at each iteration
+            double objective_function = 0;
             double sumMixedNorm = 0;
             for (int l=0 ; l<relays ; l++)
             {
@@ -211,32 +216,35 @@ int main()
                 sumMixedNorm = sumMixedNorm + lambda[l]*temp.norm();
             }
             
-            //display the value of the objective function
-            //MatrixXcd temp(1,1);
-            //temp = theta.adjoint()*Psi.pow(-0.5)*Theta*Psi.pow(-0.5)*theta;
-            //cout<<"Sum mixed norm "<<sumMixedNorm<<endl;
-            //cout<<"Iteration: "<<count<<", Objective function: "<<temp.real().trace()+sumMixedNorm<<endl<<endl;
+            MatrixXcd temp(1,1);
+            temp = w.adjoint()*Psi.pow(-0.5)*Theta*Psi.pow(-0.5)*w;
+            objective_function = temp.real().trace() + sumMixedNorm;
+            
             count++;
         }
         //end ADMM algorithm
         
+        /* END OF OPTIMIZATION ALGORITHM */
+        
+        /*   DISPLAY RESULTS    */
         cout<<"The solution vector is: "<<endl;
         cout<<theta<<endl<<endl;
         //cout<<w<<endl;
         cout<<"The algorithm converged in "<<count<<" iterations."<<endl<<endl;
 
-        
-        //compute final-achieved SINR
+        //compute final SINR
         //              for l=1:L
         //            W3(idxN(1,l):idxN(2,l),1:N(l))= ...
         //            reshape(Psi(idxNs(1,l):idxNs(2,l),idxNs(1,l):idxNs(2,l))^(-0.5)*theta(idxNs(1,l):idxNs(2,l)),N(l),N(l));
         //        end
-        //        sinr_a_c = [sinr_a_c compute_sinr(W3,K,L,N,idxN,G,H,sigma_r,sigma_ue,sigma_due)];
+        //        sinr_a_c = compute_sinr(W3,K,L,N,idxN,G,H,sigma_r,sigma_ue,sigma_due);
         
     } //end Monte Carlo for-loop
     
-    return 0;
     
+    /* END OF MONTE CARLO SIMULATION */
+    
+    return 0;
 }
 
 
