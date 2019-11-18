@@ -17,13 +17,13 @@
 #include<random>
 #include<time.h>
 
+
 //necessary library for Matrix manipulations
 #include "Eigen/Dense"
 #include "Eigen/Core"
 #include "Eigen/MatrixFunctions"
 using Eigen::MatrixXd;
 using namespace Eigen;
-
 
 using namespace std;
 
@@ -60,36 +60,12 @@ double max(const double x,const double y)
     return max;
 }
 
-//void generateChannels (std::complex<double> h[][UEs], std::complex<double> g[][UEs], const float sigmaChannel)
-//{
-//    //double real1,real2,imag1,imag2;
-//    std::normal_distribution<double> distribution(0,sigmaChannel);
-//    std::default_random_engine generator;
-//
-//    //determine the size
-//    int temp=0;
-//    for (int i=0; i<relays;i++)
-//    {
-//        temp = temp+antenna[i];
-//    }
-//
-//    for (int k=0;k<UEs;k++)
-//    {
-//        for( int n=0;n<temp;n++)
-//        {
-//            h[n][k] = std::complex<double>(distribution(generator),distribution(generator));    //backward channel
-//            g[n][k] = std::complex<double>(distribution(generator),distribution(generator)); //forward channel: complex conjugate
-//            cout<<"H: "<<h[n][k]<<endl;
-//            cout<<"G: "<<g[n][k]<<endl;
-//        }
-//    }
-//}
 
 void generateChannels(MatrixXcd& h, MatrixXcd& g, const float sigmaChannel)
 {
     std::normal_distribution<double> distribution(0,sigmaChannel);
-    std::default_random_engine generator;
-    //std::default_random_engine generator(time(0));
+    //std::default_random_engine generator;
+    std::default_random_engine generator(time(NULL));
     
     //determine the size
     int temp=0;
@@ -326,8 +302,8 @@ int main()
     
     //simulation paramters
     const int monteCarlo = pow(10,0);  //number of Monte Carlo simulations
-    const double rho = 10.0;         //penalty parameter
-    const unsigned int lambda[relays] = {50,50}; //regularization parameter
+    const double rho = 200.0;         //penalty parameter
+    const unsigned int lambda[relays] = {100,100}; //regularization parameter
     double eps_abs = 0;   //absolute tolerance metric
     double eps_rel = pow(10,-4);    //relative tolerance metric
     
@@ -342,9 +318,9 @@ int main()
         MatrixXcd g(size,UEs);
         generateChannels(h,g,sigmaChannel);
         cout<<"Backward channel H: "<<endl;
-        cout<<h<<endl;
+        cout<<h<<endl<<endl;
         cout<<"Forward channel G: "<<endl;
-        cout<<g<<endl;
+        cout<<g<<endl<<endl;
         
         //generate Psi: Matrix to express relay-power constraints
         MatrixXcd Psi (size2,size2);
@@ -389,8 +365,8 @@ int main()
         //generate the Theta Matrix: THETA = G + DELTA
         MatrixXcd Theta(size2,size2);
         Theta = G + Delta;
-        cout<<"THETA MATRIX:"<<endl;
-        cout<<Theta<<endl;
+        //cout<<"THETA MATRIX:"<<endl;
+        //cout<<Theta<<endl;
         
         Phi = Psi.pow(-0.5)*Phi;
         //cout<<"New PHI = PSI^(-0.5)*PHI "<<endl;
@@ -500,10 +476,11 @@ int main()
         }
         //end ADMM algorithm
         
-        cout<<"The algorithm converged in "<<count<<" iterations."<<endl<<endl;
-        //cout<<w<<endl;
         cout<<"The solution vector is: "<<endl;
-        cout<<theta<<endl;
+        cout<<theta<<endl<<endl;
+        //cout<<w<<endl;
+        cout<<"The algorithm converged in "<<count<<" iterations."<<endl<<endl;
+
         
         //compute final-achieved SINR
         //              for l=1:L
