@@ -23,7 +23,9 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		21D0279422D3597100DA03DA /* Sparse-relay-optimization-ADMM */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "Sparse-relay-optimization-ADMM"; sourceTree = BUILT_PRODUCTS_DIR; };
+		215E64E0237FE67F0004EA76 /* Sparse-relay-optimization-ADMM */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "Sparse-relay-optimization-ADMM"; sourceTree = BUILT_PRODUCTS_DIR; };
+		215E64E1238266160004EA76 /* functions.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = functions.h; sourceTree = "<group>"; };
+		215E64E223826E280004EA76 /* parameters.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = parameters.h; sourceTree = "<group>"; };
 		21D0279722D3597100DA03DA /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 		21D0279E22D359FF00DA03DA /* Eigen */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Eigen; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -43,16 +45,8 @@
 			isa = PBXGroup;
 			children = (
 				21D0279622D3597100DA03DA /* Sparse-relay-optimization-ADMM */,
-				21D0279522D3597100DA03DA /* Products */,
+				215E64E0237FE67F0004EA76 /* Sparse-relay-optimization-ADMM */,
 			);
-			sourceTree = "<group>";
-		};
-		21D0279522D3597100DA03DA /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				21D0279422D3597100DA03DA /* Sparse-relay-optimization-ADMM */,
-			);
-			name = Products;
 			sourceTree = "<group>";
 		};
 		21D0279622D3597100DA03DA /* Sparse-relay-optimization-ADMM */ = {
@@ -60,6 +54,8 @@
 			children = (
 				21D0279E22D359FF00DA03DA /* Eigen */,
 				21D0279722D3597100DA03DA /* main.cpp */,
+				215E64E1238266160004EA76 /* functions.h */,
+				215E64E223826E280004EA76 /* parameters.h */,
 			);
 			path = "Sparse-relay-optimization-ADMM";
 			sourceTree = "<group>";
@@ -81,7 +77,7 @@
 			);
 			name = "Sparse-relay-optimization-ADMM";
 			productName = "Sparse-relay-optimization-ADMM";
-			productReference = 21D0279422D3597100DA03DA /* Sparse-relay-optimization-ADMM */;
+			productReference = 215E64E0237FE67F0004EA76 /* Sparse-relay-optimization-ADMM */;
 			productType = "com.apple.product-type.tool";
 		};
 /* End PBXNativeTarget section */
@@ -107,7 +103,7 @@
 				en,
 			);
 			mainGroup = 21D0278B22D3597100DA03DA;
-			productRefGroup = 21D0279522D3597100DA03DA /* Products */;
+			productRefGroup = 21D0278B22D3597100DA03DA;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -250,6 +246,7 @@
 				21D0279D22D3597100DA03DA /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
