@@ -10,6 +10,8 @@
 //preprocessor directives
 #include "functions.h"
 #include <iostream>
+#include<iomanip>
+#include<ctime>
 using namespace std;
 
 
@@ -37,6 +39,7 @@ int main()
     //initialize the distortionless constraints
     MatrixXcd c(UEs,1);
     c.setOnes();
+    c=c*distortionlessConstraint;
     
     //standard deviation at different stations
     vector<double> sigmaRelay (relays);
@@ -61,9 +64,9 @@ int main()
         MatrixXcd h(size,UEs);
         MatrixXcd g(size,UEs);
         generateChannels(h,g,sigmaChannel);
-        cout<<"Backward channel H: "<<endl;
+        cout<<"Backward channel H coefficients: "<<endl;
         cout<<h<<endl<<endl;
-        cout<<"Forward channel G: "<<endl;
+        cout<<"Forward channel G coefficients: "<<endl;
         cout<<g<<endl<<endl;
         
         /* GENERATE THE REQUIRED MATRICES FOR THE OPTIMIZATION FUNCTION:
@@ -80,7 +83,9 @@ int main()
         MatrixXcd Psi (size2,size2);
         Psi.setZero();
         generatePsi(Psi,h,sigmaRelay,N,Ns);
-        
+        //cout<<"Psi Matrix: "<<endl;
+        //cout<<Psi<<endl;
+    
         //2a) generate small delta matrix: D
         MatrixXcd D(size2,UEs*UEs);
         D.setZero();
@@ -95,6 +100,8 @@ int main()
                 Phi(i,k) =  D(i,k*UEs + k);
             }
         }
+        //cout<<"Phi Matrix: "<<endl;
+        //cout<<Phi<<endl;
         
         //3) generate DELTA MATRIX
         MatrixXcd Delta (size2,size2);
@@ -109,7 +116,8 @@ int main()
         //5) generate the Theta Matrix: THETA = G + DELTA
         MatrixXcd Theta(size2,size2);
         Theta = G + Delta;
-        
+        //cout<<"Theta Matrix: "<<endl;
+        //cout<<Theta<<endl;
         
         
         /* BEGIN THE OPTIMIZATION PROCESS THROUGH THE ALTERNATING DIRECTION
@@ -117,9 +125,9 @@ int main()
          METHOD OF MULTIPLIERS (ADMM) ALGORITHM
         
          */
-        
         Phi = Psi.pow(-0.5)*Phi;
-
+    
+        std :: clock_t c_start = std :: clock ();
         //begin ADMM algorithm
         MatrixXcd Q(size2,size2);
         MatrixXcd Qinverse(size2,size2);
@@ -149,8 +157,8 @@ int main()
         eps_dual = sqrt(size2)*eps_abs + eps_rel*mu.norm();
         
         int count = 0;
-        
         //algorithm execution
+        cout<<"Solving..."<<endl;
         while( rk.norm() > eps_pri || sk.norm() > eps_dual )
         {
             //ADMM step1, update w
@@ -220,24 +228,131 @@ int main()
             temp = w.adjoint()*Psi.pow(-0.5)*Theta*Psi.pow(-0.5)*w;
             objective_function = temp.real().trace() + sumMixedNorm;
             
+            //cout<<"Objective function: "<<objective_function<<". Primal Residual: "<<rk.norm()<<". Dual Residual: "<<sk.norm()<<"."<<endl;
             count++;
         }
         //end ADMM algorithm
-        
+        std :: clock_t c_end = std :: clock ();
+        double elapsed = 1000.0*( c_end - c_start )/CLOCKS_PER_SEC;
         /* END OF OPTIMIZATION ALGORITHM */
         
         /*   DISPLAY RESULTS    */
+        cout<<"--------------------------------------------"<<endl;
+        cout<<"Status: Solved."<<endl;
+        //cout<<"Optimal Value: "<<objective_function<<endl;
+        cout<<"Primal Residual: "<<rk.norm()<<endl;
+        cout<<"Dual Residual: "<<sk.norm()<<endl;
+        cout<<"--------------------------------------------"<<endl;
         cout<<"The solution vector is: "<<endl;
-        cout<<theta<<endl<<endl;
-        //cout<<w<<endl;
-        cout<<"The algorithm converged in "<<count<<" iterations."<<endl<<endl;
+        cout<<theta<<endl;
+        cout<<"--------------------------------------------"<<endl;
+        cout<<"ADMM converged in "<<count<<" iterations."<<endl;
+        cout <<"CPU time used : "<<setprecision (2)<<elapsed<< " ms."<<endl;
+        cout<<"--------------------------------------------"<<endl;
 
-        //compute final SINR
-        //              for l=1:L
-        //            W3(idxN(1,l):idxN(2,l),1:N(l))= ...
-        //            reshape(Psi(idxNs(1,l):idxNs(2,l),idxNs(1,l):idxNs(2,l))^(-0.5)*theta(idxNs(1,l):idxNs(2,l)),N(l),N(l));
-        //        end
-        //        sinr_a_c = compute_sinr(W3,K,L,N,idxN,G,H,sigma_r,sigma_ue,sigma_due);
+        //cout<<w<<endl;
+
+        //compute expected SINR
+        //create indexing matrices
+        MatrixXi idxN(2,relays);
+        MatrixXi idxNs(2,relays);
+        
+        for(int l=0;l<relays;l++)
+        {
+            idxN(0,l) = vectorSum(N, 0, l-1); //start index
+            idxN(1,l) = vectorSum(N, 0, l)-1;   //end index
+            
+            idxNs(0,l) = vectorSum(Ns,0,l-1);   //start index
+            idxNs(1,l) = vectorSum(Ns,0,l)-1;      //end index
+        }
+        //
+        
+        double SINR_k[UEs];
+        double E_SINR=0;
+        double forwardedNoise;
+        MatrixXcd temp(1,1);
+        MatrixXcd temp2(1,1);
+        double desired;
+        double MUI;
+        
+        for(int k=0;k<UEs;k++)
+        {
+            forwardedNoise=0;
+            temp.setZero();
+            for (int l=0;l<relays;l++)
+            {
+                //get the AF-matrix B_l
+                MatrixXcd Psi_l(Ns.at(l),Ns.at(l));
+                Psi_l.setZero();
+                MatrixXcd theta_l(Ns.at(l),1);
+                slice(Psi,idxNs(0,l),idxNs(1,l),idxNs(0,l),idxNs(1,l),Psi_l);
+                slice(theta,idxNs(0,l),idxNs(1,l),0,0,theta_l);
+                MatrixXcd b_l;
+                b_l = Psi_l.pow(-0.5)*theta_l;
+                Map<MatrixXcd> B_l(b_l.data(), N.at(l),N.at(l));
+                
+                
+                //get the relevant channels
+                MatrixXcd g_kl(N.at(l),1);
+                MatrixXcd h_lk(N.at(l),1);
+                slice(h,idxN(0,l),idxN(1,l),k,k,h_lk);
+                slice(g,idxN(0,l),idxN(1,l),k,k,g_kl);
+                
+                //accumulate desired signal
+                temp = temp + g_kl.adjoint()*B_l*h_lk;
+                //compute forward relay-noise power
+                forwardedNoise = forwardedNoise + 2*sigmaR*sigmaR*(g_kl.adjoint()*B_l).squaredNorm();
+            }
+            
+            //compute desired signal's power
+            desired=sigmaUE*sigmaUE*temp.squaredNorm();
+    
+            //compute Multi-User Interference (MUI)
+            MUI = 0;
+            for(int q=0;q<UEs;q++)
+            {
+                if(q==k) {continue;}
+                else
+                {
+                    temp2.setZero();
+                    //find sum of interference terms from a given interferer 'q'
+                    //there are 'L' such copies of this component, one from each relay
+                    for (int l=0;l<relays;l++)
+                    {
+                        //get the AF-matrix B_l
+                        MatrixXcd Psi_l(Ns.at(l),Ns.at(l));
+                        Psi_l.setZero();
+                        MatrixXcd theta_l(Ns.at(l),1);
+                        slice(Psi,idxNs(0,l),idxNs(1,l),idxNs(0,l),idxNs(1,l),Psi_l);
+                        slice(theta,idxNs(0,l),idxNs(1,l),0,0,theta_l);
+                        MatrixXcd b_l;
+                        b_l = Psi_l.pow(-0.5)*theta_l;
+                        Map<MatrixXcd> B_l(b_l.data(), N.at(l),N.at(l));
+                        
+                        //get the relevant channels
+                        MatrixXcd g_kl(N.at(l),1);
+                        MatrixXcd h_lq(N.at(l),1);
+                        slice(h,idxN(0,l),idxN(1,l),q,q,h_lq);
+                        slice(g,idxN(0,l),idxN(1,l),k,k,g_kl);
+                        
+                        temp2 = temp2 + g_kl.adjoint()*B_l*h_lq;
+                    }
+                    MUI  = MUI + sigmaUE*sigmaUE*temp2.squaredNorm();
+                }
+            }
+            
+            SINR_k[k] = desired/(MUI + forwardedNoise + sigmaDUE*sigmaDUE);
+        }
+        cout<<"--------------------------------------------"<<endl;
+        for(int i=0;i<UEs;i++)
+        {
+            E_SINR = E_SINR + SINR_k[i];
+            cout<<"SINR @ destination UE "<<i+1<<": "<<10*log10(SINR_k[i])<<" dB."<<endl;
+        }
+        E_SINR = E_SINR/UEs;
+        cout<<"Average SINR: "<<E_SINR<<" dB."<<endl;
+        cout<<"--------------------------------------------"<<endl;
+
         
     } //end Monte Carlo for-loop
     

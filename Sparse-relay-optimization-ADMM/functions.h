@@ -30,6 +30,29 @@ using namespace Eigen;
 using namespace std;
 
 
+void slice (const MatrixXcd A, int rowA, int rowB, int colA,int colB,MatrixXcd &A_sliced)
+{
+    int idx_i=0;
+    
+    //test
+    //cout<<"rowA: "<<rowA<<" rowB: "<<rowB<<endl;
+    //cout<<"colA: "<<colA<<" colB: "<<colB<<endl;
+    for (int i=rowA;i<=rowB ; i++)
+    {
+        int idx_j=0;
+        
+        for(int j=colA;j<=colB;j++)
+        {
+            //cout<<"(i,j) ("<<i<<","<<j<<");"<<endl;
+            //cout<<"A(i,j) ="<<A(i,j)<<endl;
+            A_sliced(idx_i,idx_j) = A(i,j);
+            idx_j++;
+        }
+        idx_i++;
+        //cout<<"incremented the row"<<endl;
+    }
+}
+
 
 int vectorSum(vector<unsigned int> V, int startIndex,  int endIndex)
 {
