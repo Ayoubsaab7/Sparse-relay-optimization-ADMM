@@ -158,7 +158,7 @@ void generatePsi(MatrixXcd & Psi, const MatrixXcd h, const vector<double> sigmaR
             }
         }
         
-        temp2 = temp*temp.adjoint() + 2*sigmaRelay[l]*sigmaRelay[l]*eye_l;
+        temp2 = sigmaUE*sigmaUE*temp*temp.adjoint() + 2*sigmaRelay[l]*sigmaRelay[l]*eye_l;
         
         //compute the Kronecker product of temp2 and eye_l and store it in Psi_l
         Kroneckerproduct(temp2, eye_l , Psi_l);
@@ -221,10 +221,13 @@ void generateD(MatrixXcd &D,const MatrixXcd h, const MatrixXcd g, const vector <
 
 void generateDelta(MatrixXcd& Delta, const MatrixXcd D, const int size2)
 {
+    MatrixXcd temp(size2,size2);
+    
     for (int k=0;k<UEs;k++)
     {
         MatrixXcd delta_k_j(size2,1);
         
+        temp.setZero();
         for (int j=0;j<UEs;j++)
         {
             if(j!=k)
@@ -235,9 +238,11 @@ void generateDelta(MatrixXcd& Delta, const MatrixXcd D, const int size2)
                     delta_k_j(i,0) = D(i,j+UEs*k);
                 }
                 //add the outer product of delta_kj
-                Delta = Delta + delta_k_j*delta_k_j.adjoint(); // Delta = sum_{k=1}^{UEs} Delta_k
+                temp = temp + delta_k_j*delta_k_j.adjoint(); // Delta = sum_{k=1}^{UEs} Delta_k
             }
         }
+        temp = temp*sigmaUE*sigmaUE;
+        Delta = Delta + temp;
     }
 }
 

@@ -20,9 +20,9 @@ const unsigned int power[relays]={4,4,4,4};//maximum power at each relay
 
 /* channel and noise parameters */
 const  float sigmaChannel = sqrt(0.5); //channel I/Q std deviation, total = 2*sigmaChannel^2 = 1;
-const float sigmaR = sqrt(0.05); //relay-station noise std deviation
+const float sigmaR = sqrt(0.005); //relay-station noise std deviation
 const float sigmaDUE = sqrt(0.0001); //destination-UE noise std deviation
-const float sigmaUE = sqrt(1);
+const float sigmaUE = sqrt(2);
 
 /* optimization parameters  */
 const unsigned int distortionlessConstraint = 1; //pre-defined constraints
@@ -34,6 +34,8 @@ double eps_rel = pow(10,-4);    //ADMM relative tolerance metric
 
 /*simulation paremeters */
 const int monteCarlo = pow(10,0);  //number of Monte Carlo simulations
+int coherenceTime = 5;    //number of Transmission-reception instances for each MonteCarlo run
+
 
 
 #endif /* parameters_h */
