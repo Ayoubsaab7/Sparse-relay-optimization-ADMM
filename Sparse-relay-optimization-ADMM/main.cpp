@@ -301,7 +301,7 @@ int main()
                 //accumulate desired signal
                 temp = temp + g_kl.adjoint()*B_l*h_lk;
                 //compute forward relay-noise power
-                forwardedNoise = forwardedNoise + 2*sigmaR*sigmaR*(g_kl.adjoint()*B_l).squaredNorm();
+                forwardedNoise = forwardedNoise + 2*sigmaRelay.at(l)*sigmaRelay.at(l)*(g_kl.adjoint()*B_l).squaredNorm();
             }
             
             //compute desired signal's power
