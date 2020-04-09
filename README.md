@@ -21,7 +21,7 @@ The received signal at each relay can be mathematically represented as a vector 
 In addition to the design of each matrix, we would like to save some energy in this network configuration by turning off the ineffective relays. This can be mathematically done through a process called regularization.
 
 # C++ simulation
-To run the code, download the "Sparse-relay-optimization-ADMM" folder cointaing "main.cpp" and "Eigen".
+To run the code, download the "Sparse-relay-optimization-ADMM" folder cointaing "main.cpp", "parameters.h", "functions.h" and "Eigen".
 
 # Contact: suggestions, comments, questions are welcome.
 ayoub.saab@mail.mcgill.ca
