@@ -1,0 +1,13 @@
+# YAML 1.2
+---
+authors: 
+  -
+    family-names: saab
+    given-names: ayoub
+cff-version: "1.1.0"
+date-released: 2019-07-08
+doi: "10.1109/VTCFall.2018.8690755"
+message: "If you use this software, please cite it using these metadata."
+repository-code: "https://www.github.com/ayoubsaab7/Sparse-relay-optimization-ADMM"
+version: "1.1.0"
+...
