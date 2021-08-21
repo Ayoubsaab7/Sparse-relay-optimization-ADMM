@@ -14,7 +14,6 @@
 #include <ctime>
 using namespace std;
 
-
 int main()
 {
     //initialize the system parameters
