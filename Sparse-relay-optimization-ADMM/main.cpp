@@ -10,8 +10,8 @@
 //preprocessor directives
 #include "functions.h"
 #include <iostream>
-#include<iomanip>
-#include<ctime>
+#include <iomanip>
+#include <ctime>
 using namespace std;
 
 
@@ -19,20 +19,18 @@ int main()
 {
     //initialize the system parameters
     vector<unsigned int> N (relays);
-    for(int i=0;i<N.size();i++)
-    {
+    for(int i=0;i<N.size();i++){
         N.at(i) = antenna[i];
     }
+
     vector <unsigned int> Ns(relays);
-    for (int i=0;i<Ns.size();i++)
-    {
+    for (int i=0;i<Ns.size();i++){
         Ns.at(i) = N.at(i)*N.at(i);
     }
     
     //initialize the relay-power budgets
     vector<unsigned int> P(relays);
-    for (int i=0;i<P.size();i++)
-    {
+    for (int i=0;i<P.size();i++){
         P.at(i)=power[i];
     }
     
@@ -43,20 +41,15 @@ int main()
     
     //standard deviation at different stations
     vector<double> sigmaRelay (relays);
-    for(int i=0;i<sigmaRelay.size();i++)
-    {
+    for(int i=0;i<sigmaRelay.size();i++){
         sigmaRelay.at(i) = sqrt(0.5)*sigmaR;
     }
-    
-    
+
     const int size = vectorSum(N,0,relays-1); //sum_{i=1}^L N_l
     const int size2 = vectorSum(Ns,0,relays-1); //sum_{i=1}^L N_l^2
     
-    
     /* BEGIN MONTE CARLO SIMULATION */
-    
-    for (int sim = 0 ; sim<monteCarlo ; sim++)
-    {
+    for (int sim = 0 ; sim<monteCarlo ; sim++){
         /* GENERATE THE WIRELESS CHANNELS H (backward) and G (foreward) */
         
         //generate channels
@@ -92,10 +85,8 @@ int main()
 
         //2b) generate PHI MATRIX from D
         MatrixXcd Phi (size2,UEs);
-        for (int k =0 ; k<UEs ; k++)
-        {
-            for (int i =0;i<size2; i++)
-            {
+        for (int k =0 ; k<UEs ; k++){
+            for (int i =0;i<size2; i++){
                 Phi(i,k) =  D(i,k*UEs + k);
             }
         }
@@ -140,7 +131,7 @@ int main()
         MatrixXcd rk(size2,1);
         MatrixXcd sk(size2,1);
         MatrixXcd sum_sk(size2,1);
-        double eps_pri,eps_dual;
+        double eps_pri, eps_dual;
         
         //algorithm initialization
         Q = Psi.pow(-0.5)*Theta*Psi.pow(-0.5) + (rho/2.0)*I; //Q matrix
@@ -158,41 +149,32 @@ int main()
         int count = 0;
         //algorithm execution
         cout<<"Solving..."<<endl;
-        while( rk.norm() > eps_pri || sk.norm() > eps_dual )
-        {
+        while( rk.norm() > eps_pri || sk.norm() > eps_dual ){
             //ADMM step1, update w
             Q_tilde = Phi.adjoint()*Qinverse*Phi;
             nu = Q_tilde.inverse()*(c+Phi.adjoint()*Qinverse*mu-(rho/2.0)*Phi.adjoint()*Qinverse*theta);
             w = Qinverse*(rho/2.0*theta-mu+Phi*nu);
             
-            
             //ADMM step2, update theta by solving L parallel subproblems
-            for(int l=0;l<relays;l++)
-            {
+            for(int l=0; l<relays; l++){
                 //populate a_l
                 MatrixXcd a_l (antenna[l]*antenna[l],1);
                 int offset = vectorSum(Ns, 0, l-1);
-                for(int i=0;i<antenna[l]*antenna[l];i++)
-                {
+                for(int i=0; i<antenna[l]*antenna[l]; i++){
                     a_l(i,0) = (rho/2.0)*w(i+offset,0) + mu(i+offset,0);
-                    
                 }
                 
-                if(a_l.norm() - lambda[l] <=0)
-                {
+                if(a_l.norm() - lambda[l] <=0){
                     //set theta_l to zeros
-                    for (int j=0;j<antenna[l]*antenna[l];j++)
-                    {
+                    for (int j=0;j<antenna[l]*antenna[l];j++){
                         theta(j+offset,0) = 0;
                     }
                 }
                 
-                else
-                {
+                else{
                     double eta_l;
-                    eta_l=max(0.0,(a_l.norm()-lambda[l])/sqrt(P[l])-rho/2.0);
-                    for (int i =0 ; i<antenna[l]*antenna[l]; i++)
-                    {
+                    eta_l=std::max(0.0,(a_l.norm()-lambda[l])/sqrt(P[l])-rho/2.0);
+                    for (int i =0 ; i<antenna[l]*antenna[l]; i++){
                         theta(i+offset,0) = a_l(i,0)*(a_l.norm()-lambda[l])/(a_l.norm()*(rho/2.0+eta_l));
                     }
                 }
@@ -205,19 +187,16 @@ int main()
             rk = w-theta;                      //primal residual
             sk = (-rho/2.0)*theta - sum_sk;      //dual residual
             sum_sk = sum_sk + sk;              //sum of dual residuals
-            eps_pri = sqrt(size2)*eps_abs + eps_rel*max(w.norm(),theta.norm()); //primal tolerance threshold
+            eps_pri = sqrt(size2)*eps_abs + std::max(w.norm(),theta.norm())*eps_rel; //primal tolerance threshold
             eps_dual = sqrt(size2)*eps_abs + eps_rel*mu.norm();  //dual torelance threshold
-            
             
             //compute the objective function at each iteration
             double objective_function = 0;
             double sumMixedNorm = 0;
-            for (int l=0 ; l<relays ; l++)
-            {
+            for (int l=0 ; l<relays ; l++){
                 MatrixXcd temp (antenna[l]*antenna[l],1);
                 int offset = vectorSum(Ns, 0, l-1);
-                for (int j=0;j<antenna[l]*antenna[l];j++)
-                {
+                for (int j=0;j<antenna[l]*antenna[l];j++){
                     temp(j,0) = theta(j+offset,0);
                 }
                 sumMixedNorm = sumMixedNorm + lambda[l]*temp.norm();
@@ -226,7 +205,6 @@ int main()
             MatrixXcd temp(1,1);
             temp = w.adjoint()*Psi.pow(-0.5)*Theta*Psi.pow(-0.5)*w;
             objective_function = temp.real().trace() + sumMixedNorm;
-            
             //cout<<"Objective function: "<<objective_function<<". Primal Residual: "<<rk.norm()<<". Dual Residual: "<<sk.norm()<<"."<<endl;
             count++;
         }
@@ -234,8 +212,6 @@ int main()
         std :: clock_t c_end = std :: clock ();
         double elapsed = 1000.0*( c_end - c_start )/CLOCKS_PER_SEC;
         /* END OF OPTIMIZATION ALGORITHM */
-        
-        
         
         /*   DISPLAY RESULTS    */
         cout<<"--------------------------------------------"<<endl;
@@ -257,8 +233,7 @@ int main()
         MatrixXi idxN(2,relays);
         MatrixXi idxNs(2,relays);
         
-        for(int l=0;l<relays;l++)
-        {
+        for(int l=0;l<relays;l++){
             idxN(0,l) = vectorSum(N, 0, l-1); //start index
             idxN(1,l) = vectorSum(N, 0, l)-1;   //end index
             
@@ -356,7 +331,7 @@ int main()
 //        cout<<"--------------------------------------------"<<endl<<endl;
         
         /* SIMULATE TRANSMISSION-RECEPTION    */
-//        
+//
         cout<<"Simulating Transmission..."<<endl<<endl;
         std::default_random_engine generator(time(NULL));
         std::bernoulli_distribution distribution(0.5);
@@ -366,11 +341,9 @@ int main()
         //MatrixXcd rec(UEs,1);
         bool x,y;
         
-        for(int t=0; t<coherenceTime ; t++)
-        {
+        for(int t=0; t<coherenceTime ; t++){
             //simulate transmition
-            for(int u = 0; u<UEs ; u++)
-            {
+            for(int u = 0; u<UEs ; u++){
                 x = distribution(generator);
                 y = distribution (generator);
                 
@@ -383,13 +356,11 @@ int main()
             cout<<endl;
             
             //simulate reception
-            for (int u =0; u<UEs; u++)
-            {
+            for (int u =0; u<UEs; u++){
                 MatrixXcd forwardedNoise(1,1);
                 forwardedNoise.setZero();
                 temp.setZero();
-                for (int l=0;l<relays;l++)
-                {
+                for (int l=0;l<relays;l++){
                     //get the AF-matrix B_l
                     MatrixXcd Psi_l(Ns.at(l),Ns.at(l));
                     Psi_l.setZero();
@@ -414,8 +385,7 @@ int main()
                     MatrixXcd n_l(N.at(l),1);
                     std::normal_distribution<double> distribution(0,sigmaRelay.at(l));
                     //accumulate forwarded-noise
-                    for(int n =0;n<N.at(l);n++)
-                    {
+                    for(int n =0;n<N.at(l);n++){
                         n_l(n,0)=std::complex<double>(distribution(generator),distribution(generator));
                     }
                     forwardedNoise = forwardedNoise + g_kl.adjoint()*B_l*n_l;
@@ -423,15 +393,14 @@ int main()
                 
                 //compute Multi-User Interference (MUI)
                 temp2.setZero();
-                for(int q=0;q<UEs;q++)
-                {
-                    if(q==u) {continue;}
-                    else
-                    {
+                for(int q=0;q<UEs;q++){
+                    if(q==u) {
+                        continue;
+                    }
+                    else{
                         //find sum of interference terms from a given interferer 'q'
                         //there are 'L' such copies of this component, one from each relay
-                        for (int l=0;l<relays;l++)
-                        {
+                        for (int l=0;l<relays;l++){
                             //get the AF-matrix B_l
                             MatrixXcd Psi_l(Ns.at(l),Ns.at(l));
                             Psi_l.setZero();
@@ -467,21 +436,17 @@ int main()
             //end reception
             cout<<"--------------------------------------------"<<endl;
             cout<<"--------------------------------------------"<<endl;
-            
         }
         //end coherence time loop
         
-        for (int u=0;u<UEs;u++)
-        {
+        for (int u=0;u<UEs;u++){
             SINR(u,0) = 10*log10(SINR(u,0)/coherenceTime);
             cout<<"Average SINR @User"<<u+1<<" over "<<coherenceTime<<" transmissions: "<<SINR(u,0)<<" dB."<<endl;
         }
         
     } //end Monte Carlo for-loop
-    
-    
-    /* END OF MONTE CARLO SIMULATION */
-    
+
+    /* END OF MONTE CARLO SIMULATION */ 
     return 0;
 }
 
