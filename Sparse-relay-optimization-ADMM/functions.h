@@ -29,7 +29,6 @@ using namespace Eigen;
 
 using namespace std;
 
-
 void slice (const MatrixXcd A, int rowA, int rowB, int colA,int colB,MatrixXcd &A_sliced){
     int idx_i=0;
     //test
@@ -48,8 +47,7 @@ void slice (const MatrixXcd A, int rowA, int rowB, int colA,int colB,MatrixXcd &
     }
 }
 
-
-int vectorSum(vector<unsigned int> V, int startIndex,  int endIndex){
+int vectorSum(const vector<unsigned int> & V, int startIndex,  int endIndex){
     int sum = 0;
     if(startIndex<=endIndex){
         for(int i = startIndex; i<=endIndex ; i++){
@@ -59,19 +57,28 @@ int vectorSum(vector<unsigned int> V, int startIndex,  int endIndex){
     return sum;
 }
 
+void initializeSystem(vector<unsigned int> & N, vector<unsigned int> & Ns, vector<unsigned int> &P, MatrixXcd & c, vector<double>& sigmaRelay){
 
-// double max(const double x,const double y)
-// {
-//     double max;
-//     if(x>=y)
-//     {
-//         max = x;
-//     }
-//     else{ max = y;}
-    
-//     return max;
-// }
+    //initialize the system parameters
+    for(int i=0;i<N.size();i++){
+        N.at(i) = antenna[i];
+        Ns.at(i) = N.at(i)*N.at(i);
+    }
 
+    for (int i=0;i<P.size();i++){
+        P.at(i)=power[i];   //initialize the relay-power budgets
+    }
+
+    //initialize the distortionless constraints 
+    c.setOnes();
+    c=c*distortionlessConstraint; 
+
+    //initalize standard deviation @ each relay-station
+    for(int i=0;i<sigmaRelay.size();i++){
+        sigmaRelay.at(i) = sqrt(0.5)*sigmaR;
+
+    }
+}
 
 void Kroneckerproduct(const MatrixXcd  A, const MatrixXcd B, MatrixXcd &C) {
     long rowA = A.rows();
@@ -94,10 +101,8 @@ void Kroneckerproduct(const MatrixXcd  A, const MatrixXcd B, MatrixXcd &C) {
     }
 }
 
-
 void generateChannels(MatrixXcd& h, MatrixXcd& g, const float sigmaChannel){
     std::normal_distribution<double> distribution(0,sigmaChannel);
-    //std::default_random_engine generator;
     std::default_random_engine generator(time(NULL));
     
     //determine the size
@@ -113,7 +118,6 @@ void generateChannels(MatrixXcd& h, MatrixXcd& g, const float sigmaChannel){
         }
     }
 }
-
 
 void generatePsi(MatrixXcd & Psi, const MatrixXcd h, const vector<double> sigmaRelay, const vector <unsigned int> N, const vector<unsigned int> Ns){
     //generate Psi_l, l=0,...,L-1
@@ -180,7 +184,6 @@ void generateD(MatrixXcd &D,const MatrixXcd h, const MatrixXcd g, const vector <
         }
     }
 }
-
 
 void generateDelta(MatrixXcd& Delta, const MatrixXcd D, const int size2){
     MatrixXcd temp(size2,size2);

@@ -16,49 +16,41 @@ using namespace std;
 
 int main()
 {
-    //initialize the system parameters
-    vector<unsigned int> N (relays);
-    for(int i=0;i<N.size();i++){
-        N.at(i) = antenna[i];
-    }
+    //declare system parameters
+    vector<unsigned int> N(relays);
+    vector <unsigned int> Ns(relays);    
+    vector<unsigned int> P(relays); //relay-power budgets
+    MatrixXcd c(UEs,1); //distortionless constraints vector
+    vector<double> sigmaRelay (relays); //stdev @ different stations
 
-    vector <unsigned int> Ns(relays);
-    for (int i=0;i<Ns.size();i++){
-        Ns.at(i) = N.at(i)*N.at(i);
-    }
-    
-    //initialize the relay-power budgets
-    vector<unsigned int> P(relays);
-    for (int i=0;i<P.size();i++){
-        P.at(i)=power[i];
-    }
-    
-    //initialize the distortionless constraints
-    MatrixXcd c(UEs,1);
-    c.setOnes();
-    c=c*distortionlessConstraint;
-    
-    //standard deviation at different stations
-    vector<double> sigmaRelay (relays);
-    for(int i=0;i<sigmaRelay.size();i++){
-        sigmaRelay.at(i) = sqrt(0.5)*sigmaR;
-    }
-
+    //initialize system parameters
+    initializeSystem(N,Ns,P,c,sigmaRelay);
     const int size = vectorSum(N,0,relays-1); //sum_{i=1}^L N_l
     const int size2 = vectorSum(Ns,0,relays-1); //sum_{i=1}^L N_l^2
     
     /* BEGIN MONTE CARLO SIMULATION */
     for (int sim = 0 ; sim<monteCarlo ; sim++){
-        /* GENERATE THE WIRELESS CHANNELS H (backward) and G (foreward) */
+        /* 
         
+        GENERATE THE WIRELESS CHANNELS H (backward) and G (foreward) 
+        
+        */
+
         //generate channels
         MatrixXcd h(size,UEs);
         MatrixXcd g(size,UEs);
         generateChannels(h,g,sigmaChannel);
+        cout<<"--------------------------------------------"<<endl;
+        cout<<"--------------------------------------------"<<endl;
         cout<<"Backward channel H coefficients: "<<endl;
+        cout<<"--------------------------------------------"<<endl;
         cout<<h<<endl<<endl;
+        cout<<"--------------------------------------------"<<endl;
         cout<<"Forward channel G coefficients: "<<endl;
+        cout<<"--------------------------------------------"<<endl;
         cout<<g<<endl<<endl;
+        cout<<"--------------------------------------------"<<endl;
+        cout<<"--------------------------------------------"<<endl;
         
         /* GENERATE THE REQUIRED MATRICES FOR THE OPTIMIZATION FUNCTION:
          
@@ -108,28 +100,25 @@ int main()
         //cout<<"Theta Matrix: "<<endl;
         //cout<<Theta<<endl;
         
+        /* 
         
-        /* BEGIN THE OPTIMIZATION PROCESS THROUGH THE ALTERNATING DIRECTION
+            BEGIN THE OPTIMIZATION PROCESS THROUGH THE ALTERNATING DIRECTION
          
-         METHOD OF MULTIPLIERS (ADMM) ALGORITHM
+            METHOD OF MULTIPLIERS (ADMM) ALGORITHM
         
          */
+
         Phi = Psi.pow(-0.5)*Phi;
-    
         std :: clock_t c_start = std :: clock ();
+        
         //begin ADMM algorithm
-        MatrixXcd Q(size2,size2);
-        MatrixXcd Qinverse(size2,size2);
-        MatrixXcd Q_tilde(UEs,UEs);
+        MatrixXcd Q(size2,size2), Qinverse(size2,size2), Q_tilde(UEs,UEs);
         MatrixXcd I(size2,size2);
         I.setIdentity();
         MatrixXcd nu (UEs,1);
-        MatrixXcd theta(size2,1);
-        MatrixXcd w(size2,1);
-        MatrixXcd mu(size2,1);
-        MatrixXcd rk(size2,1);
-        MatrixXcd sk(size2,1);
-        MatrixXcd sum_sk(size2,1);
+        MatrixXcd theta(size2,1), w(size2,1), mu(size2,1);
+        MatrixXcd rk(size2,1),sk(size2,1),sum_sk(size2,1);
+
         double eps_pri, eps_dual;
         
         //algorithm initialization
@@ -144,7 +133,7 @@ int main()
         sum_sk = sk; //sum of dual residuals
         eps_pri = sqrt(size2)*eps_abs + eps_rel*theta.norm();
         eps_dual = sqrt(size2)*eps_abs + eps_rel*mu.norm();
-        
+                
         int count = 0;
         //algorithm execution
         cout<<"Solving..."<<endl;
@@ -214,7 +203,6 @@ int main()
         
         /*   DISPLAY RESULTS    */
         cout<<"--------------------------------------------"<<endl;
-        cout<<"--------------------------------------------"<<endl;
         cout<<"Status: Solved."<<endl;
         //cout<<"Optimal Value: "<<objective_function<<endl;
         cout<<"Primal Residual: "<<rk.norm()<<endl;
@@ -226,7 +214,7 @@ int main()
         cout<<"ADMM converged in "<<count<<" iterations."<<endl;
         cout <<"CPU time used : "<<setprecision (2)<<elapsed<< " ms."<<endl;
         cout<<"--------------------------------------------"<<endl;
-
+        cout<<"--------------------------------------------"<<endl;
         //compute expected SINR
         //create indexing matrices
         MatrixXi idxN(2,relays);
@@ -433,7 +421,6 @@ int main()
                 SINR(u,0)=SINR(u,0)+temp.squaredNorm()/((temp2+forwardedNoise).squaredNorm()+n_d.squaredNorm());
             }
             //end reception
-            cout<<"--------------------------------------------"<<endl;
             cout<<"--------------------------------------------"<<endl;
         }
         //end coherence time loop
