@@ -55,6 +55,7 @@ class mimoNetwork_t{
         }
 
         //initialize the distortionless constraints 
+        c = MatrixXcd(K,1);
         c.setOnes();
         c=c*distortionlessConstraint;
 
@@ -278,25 +279,24 @@ class mimoNetwork_t{
         int count = 0;
         //algorithm execution
         cout<<"Solving..."<<endl;
+        Q_tilde = Phi.adjoint()*Qinverse*Phi;
         while( rk.norm() > eps_pri || sk.norm() > eps_dual ){
             //ADMM step1, update w
-            Q_tilde = Phi.adjoint()*Qinverse*Phi;
             nu = Q_tilde.inverse()*(c+Phi.adjoint()*Qinverse*mu-(rho/2.0)*Phi.adjoint()*Qinverse*theta);
-            cout<<"nu is ok"<<endl;
             w = Qinverse*(rho/2.0*theta-mu+Phi*nu);
             
             //ADMM step2, update theta by solving L parallel subproblems
-            for(int l=0; l<relays; l++){
+            for(int l=0; l<L; l++){
                 //populate a_l
-                MatrixXcd a_l (antenna[l]*antenna[l],1);
+                MatrixXcd a_l (N[l]*N[l],1);
                 int offset = vectorSum(Ns, 0, l-1);
-                for(int i=0; i<antenna[l]*antenna[l]; i++){
+                for(int i=0; i<N[l]*N[l]; i++){
                     a_l(i,0) = (rho/2.0)*w(i+offset,0) + mu(i+offset,0);
                 }
                 
                 if(a_l.norm() - lambda[l] <=0){
                     //set theta_l to zeros
-                    for (int j=0;j<antenna[l]*antenna[l];j++){
+                    for (int j=0;j<N[l]*N[l];j++){
                         theta(j+offset,0) = 0;
                     }
                 }
@@ -304,7 +304,7 @@ class mimoNetwork_t{
                 else{
                     double eta_l;
                     eta_l=std::max(0.0,(a_l.norm()-lambda[l])/sqrt(P[l])-rho/2.0);
-                    for (int i =0 ; i<antenna[l]*antenna[l]; i++){
+                    for (int i =0 ; i<N[l]*N[l]; i++){
                         theta(i+offset,0) = a_l(i,0)*(a_l.norm()-lambda[l])/(a_l.norm()*(rho/2.0+eta_l));
                     }
                 }
@@ -323,10 +323,10 @@ class mimoNetwork_t{
             //compute the objective function at each iteration
             double objective_function = 0;
             double sumMixedNorm = 0;
-            for (int l=0 ; l<relays ; l++){
-                MatrixXcd temp (antenna[l]*antenna[l],1);
+            for (int l=0 ; l<L ; l++){
+                MatrixXcd temp (N[l]*N[l],1);
                 int offset = vectorSum(Ns, 0, l-1);
-                for (int j=0;j<antenna[l]*antenna[l];j++){
+                for (int j=0; j<N[l]*N[l]; j++){
                     temp(j,0) = theta(j+offset,0);
                 }
                 sumMixedNorm = sumMixedNorm + lambda[l]*temp.norm();
@@ -383,10 +383,6 @@ class mimoNetwork_t{
         Psi = MatrixXcd(size2,size2);
         Psi.setZero();
         this->generatePsi();
-        // cout<<"--------------------------------------------"<<endl;
-        // cout<<"--------------------------------------------"<<endl;
-        // cout<<"Psi Matrix: "<<endl;
-        // cout<<Psi<<endl;
     
         //2a) generate small delta matrix: D
         MatrixXcd D(size2,K*K);
@@ -400,11 +396,7 @@ class mimoNetwork_t{
                 Phi(i,k) =  D(i,k*K + k);
             }
         }
-        // cout<<"--------------------------------------------"<<endl;
-        // cout<<"--------------------------------------------"<<endl;
-        // cout<<"Phi Matrix: "<<endl;
-        // cout<<Phi<<endl;
-        
+
         //3) generate DELTA MATRIX
         MatrixXcd Delta (size2,size2);
         Delta.setZero();
@@ -418,11 +410,6 @@ class mimoNetwork_t{
         //5) generate the Theta Matrix: THETA = G + DELTA
         Theta = MatrixXcd(size2,size2);
         Theta = G + Delta;
-        // cout<<"--------------------------------------------"<<endl;
-        // cout<<"--------------------------------------------"<<endl;
-        // cout<<"Theta Matrix: "<<endl;
-        // cout<<Theta<<endl;
-
 
         //STEP3: SOLVE
         /* 
@@ -431,7 +418,8 @@ class mimoNetwork_t{
             METHOD OF MULTIPLIERS (ADMM) ALGORITHM
          */
         
-        //this->ADMM(size2);
+
+        this->ADMM(size2);
     }
 };
 
