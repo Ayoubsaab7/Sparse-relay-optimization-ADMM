@@ -6,6 +6,7 @@
 //  Copyright © 2019 Ayoub Saab. All rights reserved.
 //
 
+#include "mimo.h"
 
 //preprocessor directives
 #include "functions.h"
@@ -35,6 +36,9 @@ int main()
         GENERATE THE WIRELESS CHANNELS H (backward) and G (foreward) 
         
         */
+
+        mimoNetwork_t mimoObject;
+        mimoObject.solve();
 
         //generate channels
         MatrixXcd h(size,UEs);
@@ -66,8 +70,10 @@ int main()
         MatrixXcd Psi (size2,size2);
         Psi.setZero();
         generatePsi(Psi,h,sigmaRelay,N,Ns);
-        //cout<<"Psi Matrix: "<<endl;
-        //cout<<Psi<<endl;
+        // cout<<"--------------------------------------------"<<endl;
+        // cout<<"--------------------------------------------"<<endl;
+        // cout<<"Psi Matrix: "<<endl;
+        // cout<<Psi<<endl;
     
         //2a) generate small delta matrix: D
         MatrixXcd D(size2,UEs*UEs);
@@ -81,8 +87,10 @@ int main()
                 Phi(i,k) =  D(i,k*UEs + k);
             }
         }
-        //cout<<"Phi Matrix: "<<endl;
-        //cout<<Phi<<endl;
+        // cout<<"--------------------------------------------"<<endl;
+        // cout<<"--------------------------------------------"<<endl;
+        // cout<<"Phi Matrix: "<<endl;
+        // cout<<Phi<<endl;
         
         //3) generate DELTA MATRIX
         MatrixXcd Delta (size2,size2);
@@ -97,8 +105,10 @@ int main()
         //5) generate the Theta Matrix: THETA = G + DELTA
         MatrixXcd Theta(size2,size2);
         Theta = G + Delta;
-        //cout<<"Theta Matrix: "<<endl;
-        //cout<<Theta<<endl;
+        // cout<<"--------------------------------------------"<<endl;
+        // cout<<"--------------------------------------------"<<endl;
+        // cout<<"Theta Matrix: "<<endl;
+        // cout<<Theta<<endl;
         
         /* 
         

@@ -15,10 +15,10 @@
 #include <iostream>
 #include <string>
 #include <cmath>
-#include<vector>
-#include<complex>
-#include<random>
-#include<time.h>
+#include <vector>
+#include <complex>
+#include <random>
+#include <time.h>
 
 //necessary library for Matrix manipulations
 #include "Eigen/Dense"
@@ -76,7 +76,6 @@ void initializeSystem(vector<unsigned int> & N, vector<unsigned int> & Ns, vecto
     //initalize standard deviation @ each relay-station
     for(int i=0;i<sigmaRelay.size();i++){
         sigmaRelay.at(i) = sqrt(0.5)*sigmaR;
-
     }
 }
 
