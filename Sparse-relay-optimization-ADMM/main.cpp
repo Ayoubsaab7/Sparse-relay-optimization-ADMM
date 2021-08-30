@@ -37,9 +37,6 @@ int main()
         
         */
 
-        mimoNetwork_t mimoObject;
-        mimoObject.solve();
-
         //generate channels
         MatrixXcd h(size,UEs);
         MatrixXcd g(size,UEs);
@@ -120,7 +117,7 @@ int main()
 
         Phi = Psi.pow(-0.5)*Phi;
         std :: clock_t c_start = std :: clock ();
-        
+       
         //begin ADMM algorithm
         MatrixXcd Q(size2,size2), Qinverse(size2,size2), Q_tilde(UEs,UEs);
         MatrixXcd I(size2,size2);
@@ -147,10 +144,10 @@ int main()
         int count = 0;
         //algorithm execution
         cout<<"Solving..."<<endl;
+        Q_tilde = Phi.adjoint()*Qinverse*Phi;
         while( rk.norm() > eps_pri || sk.norm() > eps_dual ){
             //ADMM step1, update w
-            Q_tilde = Phi.adjoint()*Qinverse*Phi;
-            nu = Q_tilde.inverse()*(c+Phi.adjoint()*Qinverse*mu-(rho/2.0)*Phi.adjoint()*Qinverse*theta);
+            nu = Q_tilde.inverse()*(c+Phi.adjoint()*Qinverse*mu-(rho/2.0)*Phi.adjoint()*Qinverse*theta);            
             w = Qinverse*(rho/2.0*theta-mu+Phi*nu);
             
             //ADMM step2, update theta by solving L parallel subproblems
@@ -211,6 +208,9 @@ int main()
         double elapsed = 1000.0*( c_end - c_start )/CLOCKS_PER_SEC;
         /* END OF OPTIMIZATION ALGORITHM */
         
+        //mimoNetwork_t mimoObject;
+        //mimoObject.solve();
+
         /*   DISPLAY RESULTS    */
         cout<<"--------------------------------------------"<<endl;
         cout<<"Status: Solved."<<endl;
