@@ -246,9 +246,52 @@ class mimoNetwork_t{
             Delta = Delta + temp;
         }
     }
-    
+
     private:
-    double ADMM(const int size2){
+    void createMatrices(){
+        const int size2 = vectorSum(Ns,0,L-1); //sum_{i=1}^L N_l^2
+
+        //CREATE NEEDED MATRICES FOR OPTIMIZATION FUNCTION
+        /* 
+         1)PSI,  2)PHI, 3)DELTA,  4)G, 
+         5)THETA = DELTA+G
+         */
+
+        //1) generate Psi: Matrix to express relay-power constraints
+        Psi = MatrixXcd(size2,size2);
+        Psi.setZero();
+        this->generatePsi();
+    
+        //2a) generate small delta matrix: D
+        MatrixXcd D(size2,K*K);
+        D.setZero();
+        this->generateD(D);
+
+        //2b) generate PHI MATRIX from D
+        Phi = MatrixXcd(size2,K);
+        for (int k =0 ; k<K ; k++){
+            for (int i =0;i<size2; i++){
+                Phi(i,k) =  D(i,k*K + k);
+            }
+        }
+
+        //3) generate DELTA MATRIX
+        MatrixXcd Delta (size2,size2);
+        Delta.setZero();
+        this->generateDelta(Delta,D,size2);
+        
+        //4) generate the G Matrix
+        MatrixXcd G(size2,size2);
+        G.setZero();
+        this->generateG(G, size2);
+        
+        //5) generate the Theta Matrix: THETA = G + DELTA
+        Theta = MatrixXcd(size2,size2);
+        Theta = G + Delta;
+    }
+
+    private:
+    void ADMM(const int size2){
 
         Phi = Psi.pow(-0.5)*Phi;
         std :: clock_t c_start = std :: clock ();
@@ -356,9 +399,7 @@ class mimoNetwork_t{
         cout<<"ADMM converged in "<<count<<" iterations."<<endl;
         cout <<"CPU time used : "<<setprecision (2)<<elapsed<< " ms."<<endl;
         cout<<"--------------------------------------------"<<endl;
-        cout<<"--------------------------------------------"<<endl;
-        
-        return elapsed;
+        cout<<"--------------------------------------------"<<endl;        
     }
 
     public:
@@ -367,59 +408,17 @@ class mimoNetwork_t{
         //STEP 1: generate new channels
         this->createChannels(); //generate new channels
         
-        //STEP2: 
-        /* GENERATE THE REQUIRED MATRICES FOR THE OPTIMIZATION FUNCTION:
-         
-         1)PSI, 
-         2)PHI 
-         3)DELTA, 
-         4)G,
-         5)THETA=DELTA+G
-         
-         */
-        const int size2 = vectorSum(Ns,0,L-1); //sum_{i=1}^L N_l^2
-
-        //1) generate Psi: Matrix to express relay-power constraints
-        Psi = MatrixXcd(size2,size2);
-        Psi.setZero();
-        this->generatePsi();
-    
-        //2a) generate small delta matrix: D
-        MatrixXcd D(size2,K*K);
-        D.setZero();
-        this->generateD(D);
-
-        //2b) generate PHI MATRIX from D
-        Phi = MatrixXcd(size2,K);
-        for (int k =0 ; k<K ; k++){
-            for (int i =0;i<size2; i++){
-                Phi(i,k) =  D(i,k*K + k);
-            }
-        }
-
-        //3) generate DELTA MATRIX
-        MatrixXcd Delta (size2,size2);
-        Delta.setZero();
-        this->generateDelta(Delta,D,size2);
-        
-        //4) generate the G Matrix
-        MatrixXcd G(size2,size2);
-        G.setZero();
-        this->generateG(G, size2);
-        
-        //5) generate the Theta Matrix: THETA = G + DELTA
-        Theta = MatrixXcd(size2,size2);
-        Theta = G + Delta;
-
-        //STEP3: SOLVE
+        //STEP2: GENERATE NEEDED MATRICES FOR OPTIMIZATION FUNCTION
         /* 
-            BEGIN THE OPTIMIZATION PROCESS THROUGH THE ALTERNATING DIRECTION
-    
-            METHOD OF MULTIPLIERS (ADMM) ALGORITHM
+         1) PSI,  2) PHI, 3) DELTA,  4) G, 
+         5) THETA = DELTA + G
          */
-        
+        this->createMatrices();
 
+        //STEP3: SOLVE via ADMM       
+        const int size2 = vectorSum(Ns,0,L-1); //sum_{i=1}^L N_l^2
         this->ADMM(size2);
+
     }
 };
 
