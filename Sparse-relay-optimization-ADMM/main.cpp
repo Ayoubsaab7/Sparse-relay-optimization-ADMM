@@ -18,9 +18,6 @@ using namespace std;
 
 int main()
 {
-
-    mimoNetwork_t mimoObject;
-    mimoObject.solve();
     
     //declare system parameters
     vector<unsigned int> N(relays);
@@ -184,9 +181,9 @@ int main()
             double objective_function = 0;
             double sumMixedNorm = 0;
             for (int l=0 ; l<relays ; l++){
-                MatrixXcd temp (antenna[l]*antenna[l],1);
+                MatrixXcd temp (N[l]*N[l],1);
                 int offset = vectorSum(Ns, 0, l-1);
-                for (int j=0;j<antenna[l]*antenna[l];j++){
+                for (int j=0; j<N[l]*N[l]; j++){
                     temp(j,0) = theta(j+offset,0);
                 }
                 sumMixedNorm = sumMixedNorm + lambda[l]*temp.norm();
@@ -238,7 +235,6 @@ int main()
         
         /* SIMULATE TRANSMISSION-RECEPTION    */
 //
-        cout<<"Simulating Transmission..."<<endl<<endl;
         std::default_random_engine generator(time(NULL));
         std::bernoulli_distribution distribution(0.5);
         MatrixXcd sent(UEs,1);
@@ -249,6 +245,7 @@ int main()
         
         for(int t=0; t<coherenceTime ; t++){
             //simulate transmition
+            cout<<"Simulating Transmission..."<<endl<<endl;
             for(int u = 0; u<UEs ; u++){
                 x = distribution(generator);
                 y = distribution (generator);
@@ -262,25 +259,26 @@ int main()
             cout<<endl;
             
             //simulate reception
+            cout<<"Simulating Reception..."<<endl<<endl;
             for (int u =0; u<UEs; u++){
                 MatrixXcd forwardedNoise(1,1);
                 forwardedNoise.setZero();
                 temp.setZero();
                 for (int l=0;l<relays;l++){
                     //get the AF-matrix B_l
-                    MatrixXcd Psi_l(Ns.at(l),Ns.at(l));
+                    MatrixXcd Psi_l(Ns[l],Ns[l]);
                     Psi_l.setZero();
-                    MatrixXcd theta_l(Ns.at(l),1);
+                    MatrixXcd theta_l(Ns[l],1);
                     slice(Psi,idxNs(0,l),idxNs(1,l),idxNs(0,l),idxNs(1,l),Psi_l);
                     slice(theta,idxNs(0,l),idxNs(1,l),0,0,theta_l);
                     MatrixXcd b_l;
                     b_l = Psi_l.pow(-0.5)*theta_l;
-                    Map<MatrixXcd> B_l(b_l.data(), N.at(l),N.at(l));
+                    Map<MatrixXcd> B_l(b_l.data(), N[l],N[l]);
                     
                     
                     //get the relevant channels
-                    MatrixXcd g_kl(N.at(l),1);
-                    MatrixXcd h_lk(N.at(l),1);
+                    MatrixXcd g_kl(N[l],1);
+                    MatrixXcd h_lk(N[l],1);
                     slice(h,idxN(0,l),idxN(1,l),u,u,h_lk);
                     slice(g,idxN(0,l),idxN(1,l),u,u,g_kl);
                     
@@ -288,8 +286,8 @@ int main()
                     temp = temp + g_kl.adjoint()*B_l*h_lk*sent(u,0);
                     
                     //generate noise-at-relay
-                    MatrixXcd n_l(N.at(l),1);
-                    std::normal_distribution<double> distribution(0,sigmaRelay.at(l));
+                    MatrixXcd n_l(N[l],1);
+                    std::normal_distribution<double> distribution(0,sigmaRelay[l]);
                     //accumulate forwarded-noise
                     for(int n =0;n<N.at(l);n++){
                         n_l(n,0)=std::complex<double>(distribution(generator),distribution(generator));
@@ -308,18 +306,18 @@ int main()
                         //there are 'L' such copies of this component, one from each relay
                         for (int l=0;l<relays;l++){
                             //get the AF-matrix B_l
-                            MatrixXcd Psi_l(Ns.at(l),Ns.at(l));
+                            MatrixXcd Psi_l(Ns[l],Ns[l]);
                             Psi_l.setZero();
-                            MatrixXcd theta_l(Ns.at(l),1);
+                            MatrixXcd theta_l(Ns[l],1);
                             slice(Psi,idxNs(0,l),idxNs(1,l),idxNs(0,l),idxNs(1,l),Psi_l);
                             slice(theta,idxNs(0,l),idxNs(1,l),0,0,theta_l);
                             MatrixXcd b_l;
                             b_l = Psi_l.pow(-0.5)*theta_l;
-                            Map<MatrixXcd> B_l(b_l.data(), N.at(l),N.at(l));
+                            Map<MatrixXcd> B_l(b_l.data(), N[l],N[l]);
                             
                             //get the relevant channels
-                            MatrixXcd g_kl(N.at(l),1);
-                            MatrixXcd h_lq(N.at(l),1);
+                            MatrixXcd g_kl(N[l],1);
+                            MatrixXcd h_lq(N[l],1);
                             slice(h,idxN(0,l),idxN(1,l),q,q,h_lq);
                             slice(g,idxN(0,l),idxN(1,l),u,u,g_kl);
             
