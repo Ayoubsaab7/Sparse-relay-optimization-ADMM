@@ -291,7 +291,7 @@ class mimoNetwork_t{
     }
 
     private:
-    void ADMM(const int size2){
+    MatrixXcd ADMM(const int size2){
 
         Phi = Psi.pow(-0.5)*Phi;
         std :: clock_t c_start = std :: clock ();
@@ -400,10 +400,12 @@ class mimoNetwork_t{
         cout <<"CPU time used : "<<setprecision (2)<<elapsed<< " ms."<<endl;
         cout<<"--------------------------------------------"<<endl;
         cout<<"--------------------------------------------"<<endl;        
+        
+        return theta;
     }
 
     public:
-    void solve(){
+    MatrixXcd solve(){
         
         //STEP 1: generate new channels
         this->createChannels(); //generate new channels
@@ -417,8 +419,138 @@ class mimoNetwork_t{
 
         //STEP3: SOLVE via ADMM       
         const int size2 = vectorSum(Ns,0,L-1); //sum_{i=1}^L N_l^2
-        this->ADMM(size2);
+        
+        MatrixXcd solution_vector;
+        solution_vector = this->ADMM(size2);
+        
+        return solution_vector;
+    }
 
+    public:
+    void simulateTxRx(const MatrixXcd & theta){
+        //create indexing matrices
+        MatrixXi idxN(2,L);
+        MatrixXi idxNs(2,L);
+        for(int l=0; l<L; l++){
+            idxN(0,l) = vectorSum(N, 0, l-1); //start index
+            idxN(1,l) = vectorSum(N, 0, l)-1;   //end index
+            
+            idxNs(0,l) = vectorSum(Ns,0,l-1);   //start index
+            idxNs(1,l) = vectorSum(Ns,0,l)-1;      //end index
+        }
+        
+        MatrixXcd temp(1,1);
+        MatrixXcd temp2(1,1);
+        /* SIMULATE TRANSMISSION-RECEPTION    */
+        std::default_random_engine generator(time(NULL));
+        std::bernoulli_distribution distribution(0.5);
+        MatrixXcd sent(K,1);
+        MatrixXd SINR(K,1);
+        SINR.setZero();
+        bool x,y;
+        
+        for(int t=0; t<coherenceTime ; t++){
+            //simulate transmition
+            cout<<"Simulating Transmission..."<<endl<<endl;
+            for(int u = 0; u<K ; u++){
+                x = distribution(generator);
+                y = distribution (generator);
+                
+                if (x && y) {sent(u,0)=std::complex<double>(sigmaUE/sqrt(2),sigmaUE/sqrt(2));}
+                if (x && !y) {sent(u,0)=std::complex<double>(sigmaUE/sqrt(2),-sigmaUE/sqrt(2));}
+                if (!x && y) {sent(u,0)=std::complex<double>(-sigmaUE/sqrt(2),sigmaUE/sqrt(2));}
+                if (!x && !y) {sent(u,0)=std::complex<double>(-sigmaUE/sqrt(2),-sigmaUE/sqrt(2));}
+                cout<<"User "<<u+1<<" sent: "<<sent(u,0)<<"."<<endl;
+            }
+            cout<<endl;
+            
+            //simulate reception
+            cout<<"Simulating Reception..."<<endl<<endl;
+            for (int u =0; u<K; u++){
+                MatrixXcd forwardedNoise(1,1);
+                forwardedNoise.setZero();
+                temp.setZero();
+                for (int l=0; l<L; l++){
+                    //get the AF-matrix B_l
+                    MatrixXcd Psi_l(Ns[l],Ns[l]);
+                    Psi_l.setZero();
+                    MatrixXcd theta_l(Ns[l],1);
+                    slice(Psi,idxNs(0,l),idxNs(1,l),idxNs(0,l),idxNs(1,l),Psi_l);
+                    slice(theta,idxNs(0,l),idxNs(1,l),0,0,theta_l);
+                    MatrixXcd b_l;
+                    b_l = Psi_l.pow(-0.5)*theta_l;
+                    Map<MatrixXcd> B_l(b_l.data(), N[l], N[l]);
+                    
+                    //get the relevant channels
+                    MatrixXcd g_kl(N[l],1);
+                    MatrixXcd h_lk(N[l],1);
+                    slice(h,idxN(0,l),idxN(1,l),u,u,h_lk);
+                    slice(g,idxN(0,l),idxN(1,l),u,u,g_kl);
+                    
+                    //accumulate desired signal
+                    temp = temp + g_kl.adjoint()*B_l*h_lk*sent(u,0);
+                    
+                    //generate noise-at-relay
+                    MatrixXcd n_l(N[l],1);
+                    std::normal_distribution<double> distribution(0,sigmaRelay[l]);
+                    //accumulate forwarded-noise
+                    for(int n =0;n<N.at(l);n++){
+                        n_l(n,0)=std::complex<double>(distribution(generator),distribution(generator));
+                    }
+                    forwardedNoise = forwardedNoise + g_kl.adjoint()*B_l*n_l;
+                }
+                
+                //compute Multi-User Interference (MUI)
+                temp2.setZero();
+                for(int q=0;q<UEs;q++){
+                    if(q==u) {
+                        continue;
+                    }
+                    else{
+                        //find sum of interference terms from a given interferer 'q'
+                        //there are 'L' such copies of this component, one from each relay
+                        for (int l=0;l<relays;l++){
+                            //get the AF-matrix B_l
+                            MatrixXcd Psi_l(Ns[l],Ns[l]);
+                            Psi_l.setZero();
+                            MatrixXcd theta_l(Ns[l],1);
+                            slice(Psi,idxNs(0,l),idxNs(1,l),idxNs(0,l),idxNs(1,l),Psi_l);
+                            slice(theta,idxNs(0,l),idxNs(1,l),0,0,theta_l);
+                            MatrixXcd b_l;
+                            b_l = Psi_l.pow(-0.5)*theta_l;
+                            Map<MatrixXcd> B_l(b_l.data(), N[l],N[l]);
+                            
+                            //get the relevant channels
+                            MatrixXcd g_kl(N[l],1);
+                            MatrixXcd h_lq(N[l],1);
+                            slice(h,idxN(0,l),idxN(1,l),q,q,h_lq);
+                            slice(g,idxN(0,l),idxN(1,l),u,u,g_kl);
+            
+                            temp2 = temp2 + g_kl.adjoint()*B_l*h_lq*sent(q,0);
+                        }
+                    }
+                }
+                //generate local-noise at destination-UE
+                std::normal_distribution<double> distribution(0,sqrt(0.5)*sigmaDUE);
+                MatrixXcd n_d (1,1);
+                n_d(0,0) = std::complex<double>(distribution(generator),distribution(generator));
+
+                cout<<"User "<<u+1<<" received:"<<endl;
+                cout<<"Desired signal: "<<temp<<", Interference: "<<temp2<<", Forwarded noise: ";
+                cout<<forwardedNoise<<", Local noise: "<<n_d<<endl;
+                cout<<"SINR: "<<10*log10(temp.squaredNorm()/((temp2+forwardedNoise).squaredNorm()+n_d.squaredNorm()))<<" dB."<<endl<<endl;
+                
+                SINR(u,0)=SINR(u,0)+temp.squaredNorm()/((temp2+forwardedNoise).squaredNorm()+n_d.squaredNorm());
+            }
+            //end reception
+            cout<<"--------------------------------------------"<<endl;
+        }
+        //end coherence time loop
+        
+        for (int u=0;u<UEs;u++){
+            SINR(u,0) = 10*log10(SINR(u,0)/coherenceTime);
+            cout<<"Average SINR @User"<<u+1<<" over "<<coherenceTime<<" transmissions: "<<SINR(u,0)<<" dB."<<endl;
+        }
     }
 };
 
