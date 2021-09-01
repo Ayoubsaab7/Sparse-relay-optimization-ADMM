@@ -6,17 +6,22 @@
 //  Copyright © 2019 Ayoub Saab. All rights reserved.
 //
 
-#include "mimo.h"
-
 //preprocessor directives
 #include "functions.h"
 #include <iostream>
 #include <iomanip>
 #include <ctime>
+
+#include "mimo.h"
+
 using namespace std;
 
 int main()
 {
+
+    mimoNetwork_t mimoObject;
+    mimoObject.solve();
+    
     //declare system parameters
     vector<unsigned int> N(relays);
     vector <unsigned int> Ns(relays);    
@@ -208,9 +213,6 @@ int main()
         double elapsed = 1000.0*( c_end - c_start )/CLOCKS_PER_SEC;
         /* END OF OPTIMIZATION ALGORITHM */
         
-        //mimoNetwork_t mimoObject;
-        //mimoObject.solve();
-
         /*   DISPLAY RESULTS    */
         cout<<"--------------------------------------------"<<endl;
         cout<<"Status: Solved."<<endl;
