@@ -19,9 +19,14 @@ using namespace std;
 class mimoNetwork_t{
     private:
         //fixed parameters
-        unsigned int K; //UEs
+        unsigned int K; //number of UEs
         unsigned int L; //number of relays
+        //unsigned int s1; // size1
+        //unsigned int s2; // size2
+
+
         //fixed parameters
+        //potential for optimization here, no need for dynamic array
         vector<unsigned int> N; //relay antennas
         vector<unsigned int> Ns; //square of relay antennas
         vector<unsigned int> P; //power budgets at each relay
@@ -29,11 +34,11 @@ class mimoNetwork_t{
         MatrixXcd c; //distortionless constraints
         
         //these change for each Monte Carlo simulation
-        MatrixXcd h,g; //channels
+        MatrixXcd h,g; //channels: backward (h) and forward (g)
         //relevant matrices
-        MatrixXcd Psi; 
-        MatrixXcd Phi;
-        MatrixXcd Theta;
+        MatrixXcd Psi; // blkdiag{psi_1, ... ,psi_l} of sample covariance matrices
+        MatrixXcd Phi; //to express distortionless constraints
+        MatrixXcd Theta; //to express
 
 
     public:
@@ -44,10 +49,10 @@ class mimoNetwork_t{
     }
 
     private:
-    void initializeSystem(){//initialize the system parameters
+    void initializeSystem(){ //initialize the system parameters
         for(int i=0; i<L; i++){
             N.push_back(antenna[i]);
-            Ns.push_back(N.at(i)*N.at(i));
+            Ns.push_back(N[i]*N[i]);
         }
 
         for (int i=0; i<L; i++){
@@ -291,7 +296,7 @@ class mimoNetwork_t{
     }
 
     private:
-    MatrixXcd ADMM(const int size2){
+    MatrixXcd ADMM(const int size2, bool display){
 
         Phi = Psi.pow(-0.5)*Phi;
         std :: clock_t c_start = std :: clock ();
@@ -321,7 +326,10 @@ class mimoNetwork_t{
                 
         int count = 0;
         //algorithm execution
-        cout<<"Solving..."<<endl;
+        if (display){
+            cout<<"Solving..."<<endl;
+        }
+
         Q_tilde = Phi.adjoint()*Qinverse*Phi;
         while( rk.norm() > eps_pri || sk.norm() > eps_dual ){
             //ADMM step1, update w
@@ -386,26 +394,27 @@ class mimoNetwork_t{
         double elapsed = 1000.0*( c_end - c_start )/CLOCKS_PER_SEC;
         /* END OF OPTIMIZATION ALGORITHM */
 
-        /*   DISPLAY RESULTS    */
-        cout<<"--------------------------------------------"<<endl;
-        cout<<"Status: Solved."<<endl;
-        //cout<<"Optimal Value: "<<objective_function<<endl;
-        cout<<"Primal Residual: "<<rk.norm()<<endl;
-        cout<<"Dual Residual: "<<sk.norm()<<endl;
-        cout<<"--------------------------------------------"<<endl;
-        cout<<"The solution vector is: "<<endl;
-        cout<<theta<<endl;
-        cout<<"--------------------------------------------"<<endl;
-        cout<<"ADMM converged in "<<count<<" iterations."<<endl;
-        cout <<"CPU time used : "<<setprecision (2)<<elapsed<< " ms."<<endl;
-        cout<<"--------------------------------------------"<<endl;
-        cout<<"--------------------------------------------"<<endl;        
-        
+        if (display){
+            /*   DISPLAY RESULTS    */
+            cout<<"--------------------------------------------"<<endl;
+            cout<<"Status: Solved."<<endl;
+            //cout<<"Optimal Value: "<<objective_function<<endl;
+            cout<<"Primal Residual: "<<rk.norm()<<endl;
+            cout<<"Dual Residual: "<<sk.norm()<<endl;
+            cout<<"--------------------------------------------"<<endl;
+            cout<<"The solution vector is: "<<endl;
+            cout<<theta<<endl;
+            cout<<"--------------------------------------------"<<endl;
+            cout<<"ADMM converged in "<<count<<" iterations."<<endl;
+            cout <<"CPU time used : "<<setprecision (2)<<elapsed<< " ms."<<endl;
+            cout<<"--------------------------------------------"<<endl;
+            cout<<"--------------------------------------------"<<endl;        
+        }
         return theta;
     }
 
     public:
-    MatrixXcd solve(){
+    MatrixXcd solve(bool display){
         
         //STEP 1: generate new channels
         this->createChannels(); //generate new channels
@@ -421,7 +430,7 @@ class mimoNetwork_t{
         const int size2 = vectorSum(Ns,0,L-1); //sum_{i=1}^L N_l^2
         
         MatrixXcd solution_vector;
-        solution_vector = this->ADMM(size2);
+        solution_vector = this->ADMM(size2, display);
         
         return solution_vector;
     }
