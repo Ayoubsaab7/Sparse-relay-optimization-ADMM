@@ -33,7 +33,7 @@ double eps_rel = pow(10,-4);    //ADMM relative tolerance metric
 
 
 /*simulation paremeters */
-const int monteCarlo = pow(10,0);  //number of Monte Carlo simulations
+const int monteCarlo = pow(10,2);  //number of Monte Carlo simulations
 int coherenceTime = 5;    //number of Transmission-reception instances for each MonteCarlo run
 
 
