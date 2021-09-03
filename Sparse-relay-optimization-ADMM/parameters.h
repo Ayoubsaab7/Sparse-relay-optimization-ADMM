@@ -13,9 +13,9 @@
 
 /*    system paramters  */
 const unsigned int UEs=4;   //number of users
-const unsigned int relays=4;//number of relays
+const unsigned int relays=4; //number of relays
 const unsigned int antenna[relays]={2,2,2,2}; //number of antennas at each relay
-const unsigned int power[relays]={4,4,4,4};//maximum power at each relay
+const unsigned int power[relays]={4,4,4,4}; //maximum power at each relay
 
 
 /* channel and noise parameters */
