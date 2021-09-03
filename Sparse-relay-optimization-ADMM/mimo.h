@@ -106,7 +106,7 @@ class mimoNetwork_t{
     }
 
     private:
-    bool createChannels(){
+    bool createChannels(bool display){
         /* 
         
         GENERATE THE WIRELESS CHANNELS H (backward) and G (foreward) 
@@ -117,7 +117,10 @@ class mimoNetwork_t{
         h = MatrixXcd(size,K);
         g = MatrixXcd(size,K);
         this->generateChannels(sigmaChannel);
-        this->showChannels();
+        
+        if(display){
+            this->showChannels();
+        }
         return true;
     }
 
@@ -296,7 +299,7 @@ class mimoNetwork_t{
     }
 
     private:
-    MatrixXcd ADMM(const int size2, bool display){
+    MatrixXcd ADMM(const int size2, bool display, ostream & ostr){
 
         Phi = Psi.pow(-0.5)*Phi;
         std :: clock_t c_start = std :: clock ();
@@ -388,12 +391,18 @@ class mimoNetwork_t{
             objective_function = temp.real().trace() + sumMixedNorm;
             //cout<<"Objective function: "<<objective_function<<". Primal Residual: "<<rk.norm()<<". Dual Residual: "<<sk.norm()<<"."<<endl;
             count++;
+            ostr<<count<<" "<<objective_function<<" "<<rk.norm()<<" "<<sk.norm()<<" "<<endl;
         }
         //end ADMM algorithm
         std :: clock_t c_end = std :: clock ();
         double elapsed = 1000.0*( c_end - c_start )/CLOCKS_PER_SEC;
         /* END OF OPTIMIZATION ALGORITHM */
-
+        ostr<<"-----------------------------------------------"<<endl;
+        ostr<<"Elapsed time (ms): "<<setprecision(2)<<elapsed<<endl;
+        ostr<<"-----------------------------------------------"<<endl;
+        ostr<<"Solution vector:"<<endl;
+        ostr<<theta<<endl;
+        
         if (display){
             /*   DISPLAY RESULTS    */
             cout<<"--------------------------------------------"<<endl;
@@ -414,10 +423,10 @@ class mimoNetwork_t{
     }
 
     public:
-    MatrixXcd solve(bool display){
+    MatrixXcd solve(bool display, ostream & ostr){
         
         //STEP 1: generate new channels
-        this->createChannels(); //generate new channels
+        this->createChannels(display); //generate new channels
         
         //STEP2: GENERATE NEEDED MATRICES FOR OPTIMIZATION FUNCTION
         /* 
@@ -430,7 +439,7 @@ class mimoNetwork_t{
         const int size2 = vectorSum(Ns,0,L-1); //sum_{i=1}^L N_l^2
         
         MatrixXcd solution_vector;
-        solution_vector = this->ADMM(size2, display);
+        solution_vector = this->ADMM(size2, display, ostr);
         
         return solution_vector;
     }
