@@ -6,7 +6,7 @@ This repo contains files pertaining to my Master's thesis project, which was a c
 3) C++ code
 
 # Note to the reader
-To understand the provided C++ code, one must first go through the equations in the conference paper and play around with the math to get a sense of what's going on. However, the paper's abstract can be difficult to grasp for people who don't know domain-specific terms. 
+To understand the provided C++ code, one must first go through the equations in the conference paper and play around with the math to get a sense of what's going on. However, the paper's abstract can be difficult to grasp if you are unfamiliar with the domain-specific terms. 
 
 In what follows, I will do my best to 1) explain the motivation behind this project and 2) describe the topology of the communication system in layman terms.
 
@@ -29,7 +29,13 @@ The answer to the previous questions depends on the chosen performance criterion
 In addition to the design of each matrix, we would like to save energy in this network configuration by deactivating the ineffective relays. This calls for the modification of the chosen performance criterion to incorporate this extra requirement, which is termed as regularization in mathematical lingo.
 
 # C++ simulation
-To run the code, download the "Sparse-relay-optimization-ADMM" folder cointaing "main.cpp", "parameters.h", "functions.h" and "Eigen".
+To experiment with the code: 
+1) Download the "Sparse-relay-optimization-ADMM" folder cointaing all the code.
+2) In "parameters.h", set the variable 'monteCarlo' to 1.
+3) Uncomment the line "//mimoObject.simulateTxRx(solution_vector);" in main.cpp.
+4) Compile main via the terminal command: g++ main.cpp -o experiment
+5) Run in executed in terminal: ./experiment
+
 
 # Contact: suggestions, comments, questions are welcome.
 ayoub.saab@mail.mcgill.ca
