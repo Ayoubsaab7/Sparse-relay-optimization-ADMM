@@ -33,8 +33,8 @@ To experiment with the code:
 1) Download the "Sparse-relay-optimization-ADMM" folder cointaing all the code.
 2) In "parameters.h", set the variable 'monteCarlo' to 1.
 3) Uncomment the line "//mimoObject.simulateTxRx(solution_vector);" in main.cpp.
-4) Compile main via the terminal command: g++ main.cpp -o experiment
-5) Run in executed in terminal: ./experiment
+4) On the terminal, compile main via the command: g++ main.cpp -o experiment
+5) On the terminal, run the executable via the command: ./experiment
 
 
 # Contact: suggestions, comments, questions are welcome.
