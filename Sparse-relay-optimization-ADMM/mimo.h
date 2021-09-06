@@ -21,14 +21,14 @@ class mimoNetwork_t{
         //fixed parameters
         unsigned int K; //number of UEs
         unsigned int L; //number of relays
-        //unsigned int s1; // size1
-        //unsigned int s2; // size2
-
 
         //fixed parameters
-        //potential for optimization here, no need for dynamic array
+        /* potential for optimization here, no need for vectors */
         vector<unsigned int> N; //relay antennas
         vector<unsigned int> Ns; //square of relay antennas
+        unsigned int size1; // size1 = sum (N)
+        unsigned int size2; // size2 = sum (Ns)
+
         vector<unsigned int> P; //power budgets at each relay
         vector<double> sigmaRelay; //std-dev at each relay station
         MatrixXcd c; //distortionless constraints
@@ -68,21 +68,24 @@ class mimoNetwork_t{
         for(int i=0; i<L; i++){
             sigmaRelay.push_back(sqrt(0.5)*sigmaR);
         }
+
+        size1 = vectorSum(N,0,L-1); //sum_{i=1}^L N_l
+        size2 = vectorSum(Ns,0,L-1); //sum_{i=1}^L N_l^2
     }
     
     private:
     bool generateChannels(const float sigmaChannel){
         std::normal_distribution<double> distribution(0,sigmaChannel);
         std::default_random_engine generator(time(NULL));
-    
+
         //determine the size
-        int temp=0;
-        for (int i=0; i<L;i++){
-            temp = temp+N[i];
-        }
-    
+        // int temp=0;
+        // for (int i=0; i<L;i++){
+        //     temp = temp+N[i];
+        // }
+
         for (int k=0; k<K; k++){
-            for( int n=0;n<temp;n++){
+            for( int n=0; n<this->size1; n++){
                 h(n,k) = std::complex<double>(distribution(generator),distribution(generator));    //backward channel
                 g(n,k) = std::complex<double>(distribution(generator),distribution(generator)); //forward channel: complex conjugate
             }
@@ -112,10 +115,11 @@ class mimoNetwork_t{
         GENERATE THE WIRELESS CHANNELS H (backward) and G (foreward) 
         
         */
-        const int size = vectorSum(N,0,L-1); //sum_{i=1}^L N_l
+        
+        //const int size = vectorSum(N,0,L-1); //sum_{i=1}^L N_l
         //generate channels
-        h = MatrixXcd(size,K);
-        g = MatrixXcd(size,K);
+        h = MatrixXcd(this->size1, K);
+        g = MatrixXcd(this->size1, K);
         this->generateChannels(sigmaChannel);
         
         if(display){
@@ -194,9 +198,9 @@ class mimoNetwork_t{
     }
     
     private:
-    void generateG(MatrixXcd& G, const int size2){
+    void generateG(MatrixXcd& G){
         for (int k=0;k<UEs;k++) {
-            MatrixXcd G_k(size2,size2);
+            MatrixXcd G_k(this->size2,this->size2);
             G_k.setZero();
             
             for (int l=0;l<relays; l++){
@@ -233,17 +237,17 @@ class mimoNetwork_t{
     }
     
     private:
-    void generateDelta(MatrixXcd& Delta, const MatrixXcd D, const int size2){
-        MatrixXcd temp(size2,size2);
+    void generateDelta(MatrixXcd& Delta, const MatrixXcd D){
+        MatrixXcd temp(this->size2, this->size2);
         
         for (int k=0; k<K; k++){
-            MatrixXcd delta_k_j(size2,1);
+            MatrixXcd delta_k_j(this->size2,1);
             
             temp.setZero();
             for (int j=0; j<K; j++){
                 if(j!=k){
                     //populate
-                    for(int i =0;i<size2;i++){
+                    for(int i =0;i<this->size2;i++){
                         delta_k_j(i,0) = D(i,j+K*k);
                     }
                     //add the outer product of delta_kj
@@ -256,9 +260,7 @@ class mimoNetwork_t{
     }
 
     private:
-    void createMatrices(){
-        const int size2 = vectorSum(Ns,0,L-1); //sum_{i=1}^L N_l^2
-
+    void createMatrices(bool display){
         //CREATE NEEDED MATRICES FOR OPTIMIZATION FUNCTION
         /* 
          1)PSI,  2)PHI, 3)DELTA,  4)G, 
@@ -266,12 +268,12 @@ class mimoNetwork_t{
          */
 
         //1) generate Psi: Matrix to express relay-power constraints
-        Psi = MatrixXcd(size2,size2);
+        Psi = MatrixXcd(this->size2,this->size2);
         Psi.setZero();
         this->generatePsi();
     
         //2a) generate small delta matrix: D
-        MatrixXcd D(size2,K*K);
+        MatrixXcd D(this->size2, K*K);
         D.setZero();
         this->generateD(D);
 
@@ -284,22 +286,40 @@ class mimoNetwork_t{
         }
 
         //3) generate DELTA MATRIX
-        MatrixXcd Delta (size2,size2);
+        MatrixXcd Delta (this->size2,this->size2);
         Delta.setZero();
-        this->generateDelta(Delta,D,size2);
+        this->generateDelta(Delta,D);
         
         //4) generate the G Matrix
-        MatrixXcd G(size2,size2);
+        MatrixXcd G(this->size2, this->size2);
         G.setZero();
-        this->generateG(G, size2);
+        this->generateG(G);
         
         //5) generate the Theta Matrix: THETA = G + DELTA
-        Theta = MatrixXcd(size2,size2);
+        Theta = MatrixXcd(this->size2, this->size2);
         Theta = G + Delta;
+
+        if (display){
+        cout<<"--------------------------------------------"<<endl;
+        cout<<"--------------------------------------------"<<endl;
+        cout<<"Psi Matrix: "<<endl;
+        cout<<"--------------------------------------------"<<endl;
+        cout<<this->Psi<<endl<<endl;
+        cout<<"--------------------------------------------"<<endl;
+        cout<<"Phi Matrix: "<<endl;
+        cout<<"--------------------------------------------"<<endl;
+        cout<<this->Phi<<endl<<endl;
+        cout<<"--------------------------------------------"<<endl;
+        cout<<"Theta Matrix: "<<endl;
+        cout<<"--------------------------------------------"<<endl;
+        cout<<this->Theta<<endl<<endl;
+        cout<<"--------------------------------------------"<<endl;
+        cout<<"--------------------------------------------"<<endl;
+        }
     }
 
     private:
-    MatrixXcd ADMM(const int size2, bool display, ostream & ostr){
+    MatrixXcd ADMM(bool display, ostream & ostr){
 
         Phi = Psi.pow(-0.5)*Phi;
         std :: clock_t c_start = std :: clock ();
@@ -433,13 +453,11 @@ class mimoNetwork_t{
          1) PSI,  2) PHI, 3) DELTA,  4) G, 
          5) THETA = DELTA + G
          */
-        this->createMatrices();
+        this->createMatrices(display);
 
         //STEP3: SOLVE via ADMM       
-        const int size2 = vectorSum(Ns,0,L-1); //sum_{i=1}^L N_l^2
-        
         MatrixXcd solution_vector;
-        solution_vector = this->ADMM(size2, display, ostr);
+        solution_vector = this->ADMM(display, ostr);
         
         return solution_vector;
     }
