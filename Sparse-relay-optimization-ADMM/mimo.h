@@ -129,10 +129,10 @@ class mimoNetwork_t{
     }
 
     private:
-    bool generatePsi(){
+    void generatePsi(){
         //generate Psi_l, l=0,...,L-1
         for (int l=0;l<L;l++){
-            MatrixXcd Psi_l (N[l]*N[l],N[l]*N[l]);
+            MatrixXcd Psi_l (Ns[l],Ns[l]);
             MatrixXcd temp (N[l],K);
             MatrixXcd temp2(N[l],N[l]);
             MatrixXcd eye_l (N[l],N[l]);
@@ -154,13 +154,12 @@ class mimoNetwork_t{
             
             //populate the Psi matrix with Psi_l, for l=0,1,...,L-1 in a block diagonal fashion
             offset = vectorSum(Ns, 0, l-1);
-            for (int i=0;i<N[l]*N[l]; i++){
-                for(int j=0; j<N[l]*N[l]; j++){
+            for (int i=0;i<Ns[l]; i++){
+                for(int j=0; j<Ns[l]; j++){
                     Psi(i+offset,j+offset) = Psi_l(i,j);
                 }
             }
         }
-        return true;
     }
 
     private:
@@ -168,7 +167,7 @@ class mimoNetwork_t{
 
         for (int l=0;l<L;l++){
             int offset2 = vectorSum(Ns, 0, l-1);
-            MatrixXcd temp (N[l]*N[l],1);
+            MatrixXcd temp (Ns[l],1);
             for (int k=0 ; k<K ; k++){
                 //get g_kl
                 MatrixXcd g_kl (N[l],1);
@@ -189,7 +188,7 @@ class mimoNetwork_t{
                     Kroneckerproduct(h_lj.conjugate(), g_kl, temp);
                     
                     //store all the results in D
-                    for(int z=0 ; z<N[l]*N[l] ; z++){
+                    for(int z=0 ; z<Ns[l] ; z++){
                         D(z+offset2,j+k*K) = temp(z,0);
                     }
                 }
@@ -212,14 +211,14 @@ class mimoNetwork_t{
                 }
 
                 //get G_kl
-                MatrixXcd G_kl(N[l]*N[l],N[l]*N[l]);
+                MatrixXcd G_kl(Ns[l],Ns[l]);
                 G_kl.setZero();
                 
                 for (int j=0;j<N[l];j++){
                     MatrixXcd eye_j (N[l],1);
                     eye_j.setZero();
                     eye_j(j,0) = 1;
-                    MatrixXcd kron (N[l]*N[l],1);
+                    MatrixXcd kron (Ns[l],1);
                     Kroneckerproduct(eye_j, g_kl, kron);
                     G_kl = G_kl + kron*kron.adjoint() ;
                 }
@@ -227,8 +226,8 @@ class mimoNetwork_t{
                 
                 //G_k = blkdiag{G_k1, G_k2, ... , G_kL}
                 int offset2 = vectorSum(Ns, 0, l-1);
-                for (int n=0; n<N[l]*N[l]; n++){
-                    for (int m=0; m<N[l]*N[l]; m++)
+                for (int n=0; n<Ns[l]; n++){
+                    for (int m=0; m<Ns[l]; m++)
                         G_k(n+offset2,m+offset2) = G_kl(n,m);
                 }
             }
